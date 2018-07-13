@@ -89,6 +89,8 @@ def estimate_ARIMAXmodelorder(data_in):
             meter_id = row[0]
             endog = row[1]
             exog = row[3]
+            if not(len(exog.index)):
+                raise ValueError('please check exog_check on data_gather')
             print('*** {} ***'.format(meter_id))
             individual_start_time = t.time()
 

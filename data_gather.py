@@ -175,8 +175,8 @@ def data_check(data):
         print("Data Check passed")
     return check
 
-
-# data = gather_cer_data(1, 1060, forecast_check=True)
+#
+# data = gather_cer_data(1, 1277, forecast_check=True)
 # data_check(data)
 # for row in data:
 #     plt.plot(row[1])
