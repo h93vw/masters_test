@@ -5,33 +5,37 @@ from import_csv import *
 
 import matplotlib.pylab as plt
 
-csv_ARIMAX_orders = open('..\\masters_test\\data\\orders_ARIMAX.csv', "w+")
-csv_SARIMA_orders = open('..\\masters_test\\data\\orders_SARIMA.csv', "w+")
-num_of_meters = 100
 
-data = gather_cer_data(num_of_meters)
+num_of_meters = 100
+window_size = window_size=datetime.timedelta(weeks=24)
+# csv_ARIMAX_orders = open('..\\masters_test\\data\\orders_ARIMAX%d.csv' % num_of_meters, "r")
+# csv_SARIMA_orders = open('..\\masters_test\\data\\orders_SARIMA%d.csv' % num_of_meters, "r")
+
+data = gather_cer_data(num_of_meters, window_size=window_size, exog_check=True, forecast_check=True)
 # data_check(data)
 
 '''Cluster'''
 
-
 '''SARIMA'''
-orders, order_estimation_t = estimate_SARIMAmodelorder(data)
+# orders, order_estimation_t = estimate_SARIMAmodelorder(data)
 # mapes, forecast_t = forecast_SARIMA_fixed_order(data)
-write_csv_file(csv_ARIMAX_orders, orders, data_dict=True)
+# csv_SARIMA_orders = open('..\\masters_test\\data\\orders_SARIMA%d.csv' % num_of_meters, "w+")
+# write_csv_file(csv_SARIMA_orders, orders, data_dict=True)
 
 '''ARIMAX'''
-# orders, order_estimation_t = estimate_ARIMAXmodelorder(data)
+orders, order_estimation_t = estimate_ARIMAXmodelorder(data)
 # mapes, forecast_t = forecast_ARIMAX_fixed_order(data)
+mapes, forecast_t = forecast_ARIMAX(data, orders)
 # write_csv_file(csv_ARIMAX_orders, orders, data_dict=True)
 
 
-# mapes_list = list(mapes.values())
-# cleanmapes = [x for x in mapes_list if (x != np.inf)]
-# plt.plot(list(mapes.values()))
-# plt.show()
-# print("fin; Average MAPE per meter: %f" % (sum(cleanmapes) / len(cleanmapes)))
-# print("fin")
+mapes_list = list(mapes.values())
+cleanmapes = [x for x in mapes_list if (x != np.inf)]
+print("fin; Average MAPE per meter: %f" % (np.nanmean(cleanmapes)))
+print("fin")
+
+plt.plot(list(mapes.values()))
+plt.show()
 
 """
 TODO:

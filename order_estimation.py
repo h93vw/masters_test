@@ -78,7 +78,7 @@ def estimate_ARIMAXmodelorder(data_in):
     orders = {}
     times = {}
 
-    print("Begin - Estimating SARIMA orders")
+    print("Begin - Estimating ARIMAX orders")
     program_start_time = t.time()
 
     for row in data_in:
