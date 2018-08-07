@@ -29,24 +29,24 @@ def forecast_ARIMAX(data_in, orders):
         endog = row[1]
         observed = row[2]
         exog = row[3]
-        observed_exog = row[4]
+        # observed_exog = row[4]
         pdq = orders[meter_id]
 
         if not(len(observed.index)):
             raise ValueError('please check forecast_check on data_gather')
-        if not(len(exog.index)):
-            raise ValueError('please check exog_check on data_gather')
+        # if not(len(exog.index)):
+        #     raise ValueError('please check exog_check on data_gather')
         try:
             print("Begin - Building model for meter: %d" % meter_id)
             warnings.filterwarnings("ignore")  # specify to ignore warning messages
 
-            mod = sm.tsa.statespace.SARIMAX(endog, exog,
+            mod = sm.tsa.statespace.SARIMAX(endog, # exog,
                                             order=pdq,
                                             enforce_stationarity=False,
                                             enforce_invertibility=False)
 
             results = mod.fit(disp=0)
-            forecast = results.get_forecast(steps=48, exog=observed_exog)
+            forecast = results.get_forecast(steps=48)# , exog=observed_exog)
 
             mape = np.mean(np.abs((observed - forecast.predicted_mean.values) / observed)) * 100
             print('MAPE: {}'.format(mape))

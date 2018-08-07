@@ -6,8 +6,8 @@ from import_csv import *
 import matplotlib.pylab as plt
 
 
-num_of_meters = 100
-window_size = window_size=datetime.timedelta(weeks=24)
+num_of_meters = 1
+window_size = window_size=datetime.timedelta(weeks=12)
 # csv_ARIMAX_orders = open('..\\masters_test\\data\\orders_ARIMAX%d.csv' % num_of_meters, "r")
 # csv_SARIMA_orders = open('..\\masters_test\\data\\orders_SARIMA%d.csv' % num_of_meters, "r")
 
@@ -23,9 +23,9 @@ data = gather_cer_data(num_of_meters, window_size=window_size, exog_check=True, 
 # write_csv_file(csv_SARIMA_orders, orders, data_dict=True)
 
 '''ARIMAX'''
-orders, order_estimation_t = estimate_ARIMAXmodelorder(data)
-# mapes, forecast_t = forecast_ARIMAX_fixed_order(data)
-mapes, forecast_t = forecast_ARIMAX(data, orders)
+# orders, order_estimation_t = estimate_ARIMAXmodelorder(data)
+mapes, forecast_t = forecast_ARIMAX_fixed_order(data)
+# mapes, forecast_t = forecast_ARIMAX(data, orders)
 # write_csv_file(csv_ARIMAX_orders, orders, data_dict=True)
 
 
