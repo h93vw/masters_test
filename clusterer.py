@@ -14,9 +14,16 @@ from math import sqrt
 from statistics import mode
 from collections import Counter
 from meter_selection import get_meters
-# from parameter_selection import get_orders_csv
+from meter_selection import get_orders_csv
+from import_csv import *
 # from Import_CSV import *
 
+
+def get_mode_orders(csv_input, num=1):
+    orders = get_orders_csv(csv_input)
+    mode_orders = Counter(orders).most_common(num)
+    print(mode_orders)
+    return mode_orders
 
 def euclid_dist(t1, t2):
     return sqrt(sum((t1-t2)**2))
@@ -94,100 +101,123 @@ def k_means_clust(data, num_clust, num_iter, w=5):
     return centroids
 
 
-# endogs = []
-# ids = []
-# clusters = []
-# best_fit_params = []
-# times = []
-# data_out = []
-# number_of_meters = 4621
-# # centroid_file_out = open('C:\\Users\\h93vw\\PycharmProjects\\ARIMATest\\data\\cer\\cluster_centroids%d.csv' % number_of_meters, 'w+')
-# cluster_file_out = open('C:\\Users\\h93vw\\PycharmProjects\\ARIMATest\\data\\cer\\clusters.csv', 'w+')
-# file_in = open('C:\\Users\\h93vw\\PycharmProjects\\ARIMATest\\data\\cer\\cluster_centroids.csv', 'r')
-# data = gather_cer_data(number_of_meters)
-# data_check(data)
-#
-# for item in data:
-#     ids.append(item[0])
-#     endogs.append([float(i) for i in item[1]])
-#
-#
-# time_window = data[0][5]
-# observed_window = data[0][6]
-#
-# # centroids = k_means_clust(endogs, 3, 10)
-#
-# centroids = read_csv_file(file_in)
-#
-#
-#
-# for centroid in centroids:
-#     centroids[centroids.index(centroid)] = [float(i) for i in centroid]
-# #     plt.plot(centroid)
-#
-# # # output to csv
-# # write_csv_file(centroid_file_out, centroids)
-#
-# for item in endogs:
-#     distance = []
-#     for centroid in centroids:
-#         distance.append(LB_Keogh(item, centroid, 5))
-#     clusters.append(distance.index(min(distance)))
-#
-# for meter_id in ids:
-#     data_out.append([meter_id, clusters[ids.index(meter_id)]])
-#
-# write_csv_file(cluster_file_out, data_out)
+def calculate_centroids(data, num_clust=3, num_iter=10, write_check=False):
 
-# for centroid in centroids:
-#     individual_start_time = t.time()
-#
-#     endog = pd.Series(centroid, index=time_window, dtype='Float64')
-#     aic = []
-#     params = []
-#
-#     # Define the p, d and q parameters to take any value between 0 and 2
-#     p = d = q = range(0, 3)
-#     # seasonal order
-#     sp = sq = sd = range(0, 2)
-#
-#     # Generate all different combinations of p, q and q triplets
-#     pdq = list(itertools.product(p, d, q))
-#
-#     # Generate all different combinations of seasonal p, q and q triplets
-#     seasonal_pdq = [(x[0], x[1], x[2], 48) for x in list(itertools.product(sp, sd, sq))]
-#
-#     warnings.filterwarnings("ignore")  # specify to ignore warning messages
-#     i = 1
-#     for param_seasonal in seasonal_pdq:
-#         for param in pdq:
-#             try:
-#                 mod = sm.tsa.statespace.SARIMAX(endog,
-#                                                 # exog,
-#                                                 order=param,
-#                                                 seasonal_order=param_seasonal,
-#                                                 enforce_stationarity=False,
-#                                                 enforce_invertibility=False)
-#
-#                 results = mod.fit(disp=0)
-#
-#                 print('{} - ARIMA{} - AIC:{}'.format(i, param, results.aic))
-#                 i += 1
-#                 aic.append(results.aic)
-#                 params.append([param, param_seasonal])
-#             except:
-#                 continue
-#     index = aic.index(min(aic))
-#     best_fit_params.append(params[index])
-#     individual_end_time = t.time()
-#     times.append(individual_end_time - individual_start_time)
-#
-# plt.show()
+    endogs = []
+    meter_ids = []
+
+    number_of_meters = len(data)
+
+    for row in data:
+        meter_ids.append(row[0])
+        endogs.append([float(i) for i in row[1]])
+
+    centroids = k_means_clust(endogs, num_clust, num_iter)
+
+    if write_check:
+        cluster_file_out = open('..\\masters_test\\data\\clusters_centroids%d.csv' % number_of_meters, 'w+')
+        write_csv_file(cluster_file_out, centroids)
+
+    return centroids
 
 
-'''Mode Orders'''
-# csv_input = open('..\\masters_test\\data\\orders_ARIMAX.csv', "r")
-# orders = get_orders_csv(csv_input)
-# print((Counter(orders).most_common(5)))
-#
+def estimate_orders_centroids(centroids=[], csv_check=True, seasonal_check=False, write_check=False):
+    orders = {}
+
+    if csv_check:
+        cluster_file_in = open('..\\masters_test\\data\\clusters_centroids.csv', 'r')
+        centroids = read_csv_file(cluster_file_in)
+
+    for centroid in centroids:
+        centroids[centroids.index(centroid)] = [float(i) for i in centroid]
+    #     plt.plot(centroid)
+    # plt.show()
+
+    for centroid in centroids:
+        # individual_start_time = t.time()
+
+        # endog = pd.Series(centroid, index=time_window, dtype='Float64')
+        endog = centroid
+        aic = []
+        params = []
+
+        # Define the p, d and q parameters to take any value between 0 and 2
+        p = d = q = range(0, 3)
+        # seasonal order
+        sp = sq = sd = range(0, 2)
+
+        # Generate all different combinations of p, q and q triplets
+        pdq = list(itertools.product(p, d, q))
+
+        if seasonal_check:
+            # Generate all different combinations of seasonal p, q and q triplets
+            seasonal_pdq = [(x[0], x[1], x[2], 48) for x in list(itertools.product(sp, sd, sq))]
+        else:
+            seasonal_pdq = [(0, 0, 0, 48)]
+
+        warnings.filterwarnings("ignore")  # specify to ignore warning messages
+        i = 1
+        for param_seasonal in seasonal_pdq:
+            for param in pdq:
+                try:
+                    mod = sm.tsa.statespace.SARIMAX(endog,
+                                                    # exog,
+                                                    order=param,
+                                                    seasonal_order=param_seasonal,
+                                                    enforce_stationarity=False,
+                                                    enforce_invertibility=False)
+
+                    results = mod.fit(disp=0)
+
+                    print('{} - ARIMA{} - AIC:{}'.format(i, param, results.aic))
+                    i += 1
+                    aic.append(results.aic)
+                    params.append([param, param_seasonal])
+                except:
+                    continue
+        index = aic.index(min(aic))
+        orders[centroids.index(centroid)] = params[index]
+        # individual_end_time = t.time()
+        # times[centroids.index(centroid)] = (individual_end_time - individual_start_time)
+    for key, value in orders.items():
+        print("{} - {}".format(key, value))
+    if write_check:
+        cluster_file_out = open('..\\masters_test\\data\\clusters_orders.csv', 'w+')
+        write_csv_file(cluster_file_out, orders, data_dict=True)
+
+    return orders
+
+
+def assign_clusters(data, centroids=[], cluster_orders={}, csv_check=True, write_check=False):
+
+    endogs = {}
+    clusters = {}
+
+    number_of_meters = len(data)
+
+    for row in data:
+        endogs[row[0]] = ([float(i) for i in row[1]])
+
+    if csv_check:
+        cluster_file_in = open('..\\masters_test\\data\\clusters_centroids.csv', 'r')
+        centroids = read_csv_file(cluster_file_in)
+
+    for centroid in centroids:
+        centroids[centroids.index(centroid)] = [float(i) for i in centroid]
+    #     plt.plot(centroid)
+    # plt.show()
+
+    for key, value in endogs.items():
+        distances = []
+        for centroid in centroids:
+            distances.append(LB_Keogh(value, centroid, 5))
+        clusters[key] = cluster_orders[distances.index(min(distances))]
+
+    if write_check:
+        cluster_file_out = open('..\\masters_test\\data\\clusters_assignment%d.csv' % number_of_meters, 'w+')
+        write_csv_file(cluster_file_out, clusters, data_dict=True)
+
+    return clusters
+
+
 # print("fin")

@@ -9,7 +9,7 @@ from meter_selection import get_meters
 
 import matplotlib.pylab as plt
 
-# date_time_format = '%Y-%m-%d %H:%M:%S.%f'  # .%f needed for java generated csv file
+date_time_format = '%Y-%m-%d %H:%M:%S'  # .%f needed for java generated csv file
 
 
 def gather_cer_data(number_of_meters=4621, start=1000, window_size=datetime.timedelta(weeks=3), exog_check=False, forecast_check=False):
@@ -148,6 +148,75 @@ def gather_cer_data(number_of_meters=4621, start=1000, window_size=datetime.time
     print("fin-Data_fetch; Time: %d " % (program_end_time - program_start_time))
     access_sql.disconnect_postgresql(conn)
     return data
+
+
+def gather_cer_data_window(current_time, number_of_meters=1, start=1000, window_size=datetime.timedelta(weeks=3)):
+
+    data = {}
+
+    #print("Begin - Data fetch")
+    program_start_time = t.time()
+
+    meter_ids = get_meters(number_of_meters, start=start)
+
+    conn = access_sql.connect_postgresql()
+
+    for meter_id in meter_ids:
+        #print('{} gather - Fetching data from meter {}'.format(meter_ids.index(meter_id), meter_id))
+
+        query = "SELECT date, measurement FROM readings WHERE meterid = {} AND date > '{}'::timestamp AND date <= '{}'::timestamp ORDER BY date".format(meter_id, (current_time-window_size).strftime(date_time_format), current_time.strftime(date_time_format))
+
+        try:
+
+            rows = access_sql.access_postgresql(conn, query)
+
+            timestamps = [row[0] for row in rows]
+            agg = [row[1] for row in rows]
+
+            endog = pd.Series(agg, index=timestamps, dtype='Float64')
+
+        except:
+            print("Error: Skipping meter: %d" % meter_id)
+            meter_ids.remove(meter_id)
+            continue
+
+        data[meter_id] = endog
+
+    program_end_time = t.time()
+    #print("fin-Data_fetch; Time: %d " % (program_end_time - program_start_time))
+    access_sql.disconnect_postgresql(conn)
+    return data
+
+
+def gather_cer_data_single(current_time, meter_id):
+
+    data = {}
+
+    #print("Begin - Data fetch")
+    program_start_time = t.time()
+
+    conn = access_sql.connect_postgresql()
+
+    #print('gather - Fetching data from meter {}'.format(meter_id))
+
+    query = "SELECT date, measurement FROM readings WHERE meterid = {} AND date = '{}'::timestamp".format(meter_id, current_time.strftime(date_time_format))
+
+    try:
+
+        rows = access_sql.access_postgresql(conn, query)
+
+        timestamps = [row[0] for row in rows]
+        agg = [row[1] for row in rows]
+
+        record = pd.Series(agg, index=timestamps, dtype='Float64')
+
+    except:
+        print("Error: Skipping meter: %d" % meter_id)
+
+    program_end_time = t.time()
+    #print("fin-Data_fetch; Time: %d " % (program_end_time - program_start_time))
+    access_sql.disconnect_postgresql(conn)
+    return record
 
 
 def data_check(data):

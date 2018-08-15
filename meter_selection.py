@@ -1,5 +1,5 @@
 from import_csv import *
-
+from ast import literal_eval
 
 def get_meters(number_of_meters=4621, start=1000):
     csv_input = open('..\\masters_test\\data\\meterreadingsall.csv', "r")
@@ -12,8 +12,8 @@ def get_meters(number_of_meters=4621, start=1000):
 
 def get_orders_csv(csv_input):
     data = read_csv_file(csv_input, ',')
-    orders = data[1]
-    times = [float(i) for i in data[2]]
-    avg_time = (sum(times)/len(times))
-    print(avg_time)
+    orders = [literal_eval(row[1]) for row in data]
+    # times = [float(i) for i in data[2]]
+    # avg_time = (sum(times)/len(times))
+    # print(avg_time)
     return orders
