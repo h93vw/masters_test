@@ -21,5 +21,16 @@ def access_postgresql(conn, query):
     return rows
 
 
+def access_postgresql_single(conn, query):
+
+    # create a cursor
+    cur = conn.cursor()
+
+    cur.execute(query)
+
+    record = cur.fetchone()
+    return record
+
+
 def disconnect_postgresql(conn):
     conn.close()

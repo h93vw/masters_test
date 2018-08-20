@@ -10,13 +10,16 @@ import datetime
 
 # csv_ARIMAX_orders = open('..\\masters_test\\data\\orders_ARIMAX.csv', "r")
 
-current_time = datetime.datetime(2010, 10, 7, 0, 0) # (2016, 12, 12, 0, 0)
-num_of_meters = 1
+current_time = datetime.datetime(2016, 12, 12, 0, 0) # (2010, 10, 7, 0, 0) timestamps differ at home
+num_of_meters = 10
 sample_frequency = datetime.timedelta(minutes=30)
 window_size = datetime.timedelta(weeks=12)
 fixed_pdq = (0, 1, 2)
-seasonal_pdq = (0, 1, 1, 48)
+seasonal_pdq = (0, 0, 0, 48) # (0, 1, 1, 48)
 count = 0
+number_of_tests = 100
+models = None
+params = None
 
 
 def update_time(current_time, sample_freq=datetime.timedelta(minutes=30)):
@@ -24,8 +27,8 @@ def update_time(current_time, sample_freq=datetime.timedelta(minutes=30)):
     return current_time
 
 
-def init_lookback_windows(current_time, num_of_meters=1, window_size=datetime.timedelta(weeks=12)):
-    lookback_windows = gather_cer_data_window(current_time, num_of_meters, window_size=window_size)
+def init_lookback_windows(current_time, num_of_meters=1, start_meter=1000, window_size=datetime.timedelta(weeks=12)):
+    lookback_windows = gather_cer_data_window(current_time, num_of_meters, start_meter, window_size=window_size)
     return lookback_windows
 
 
@@ -37,9 +40,17 @@ def update_lookback_windows(current_time, lookback_windows, window_size=datetime
     return lookback_windows
 
 
-def fit_build_models(lookback_windows, pdq=(0, 1, 2), seasonal_pdq=(0, 0, 0, 48)):
-    models = {}
+def fit_build_models(lookback_windows, models=None, params=None, pdq=(0, 1, 2), seasonal_pdq=(0, 0, 0, 48)):
+    if models is None:
+        models = {}
     for key, value in lookback_windows.items():
+        if params is None:
+            params = {}
+            params_list = None
+        elif key not in params:
+            params_list = None
+        else:
+            params_list = params[key]
         build_model = sm.tsa.statespace.SARIMAX(value,
                                                 order=pdq,
                                                 seasonal_order=seasonal_pdq,
@@ -47,10 +58,14 @@ def fit_build_models(lookback_windows, pdq=(0, 1, 2), seasonal_pdq=(0, 0, 0, 48)
                                                 enforce_invertibility=False)
 
         fit_model = build_model.fit(disp=0)
-        params = fit_model.params
-        print(params)
+        if params_list is not None:
+            params_list = pd.concat([params_list, fit_model.params.rename(value.index[-1])], axis=1)
+            params_list.sort_index(axis=1, inplace=True)
+        else:
+            params_list = fit_model.params.rename(value.index[-1])
         models[key] = fit_model
-    return models
+        params[key] = params_list
+    return models, params
 
 
 def make_predictions(models, predictions=None, forecast_horizon=datetime.timedelta(days=1), sample_freq=datetime.timedelta(minutes=30)):
@@ -75,7 +90,7 @@ def verify_forecast(lookback_window, predictions, mapes=None):
     for key, value in lookback_windows.items():
         prediction_list = predictions[key]
         current_prediction = prediction_list[0]
-        prediction_window_start =current_prediction.index.values[0]
+        prediction_window_start = current_prediction.index.values[0]
         prediction_window_end = current_prediction.index.values[-1]
 
         observed_window = lookback_window[key][prediction_window_start:prediction_window_end]
@@ -101,37 +116,32 @@ def verify_forecast(lookback_window, predictions, mapes=None):
 print("Begin Initialization")
 program_start_time = t.time()
 
-lookback_windows = init_lookback_windows(current_time, num_of_meters, window_size=window_size)
-models = fit_build_models(lookback_windows, fixed_pdq, seasonal_pdq)
-predictions = make_predictions(models)
+start, end = gather_cer_data_time_range(1000)
 
-initialization0_end_time = t.time()
-print("Finished lookback_window Initialization - {}s \nStarting update".format(initialization0_end_time-program_start_time))
-initialization1_start_time = t.time()
-mapes, predictions = verify_forecast(lookback_windows, predictions)
-while not mapes:
-    count += 1
-    print("update_count = {}".format(count))
-    current_time = update_time(current_time)
-    lookback_windows = update_lookback_windows(current_time, lookback_windows)
-    models = fit_build_models(lookback_windows, fixed_pdq, seasonal_pdq) #, seasonal_pdq)
-    predictions = make_predictions(models, predictions)
-    mapes, predictions = verify_forecast(lookback_windows, predictions, mapes)
+test_range = pd.date_range(start + window_size, end, freq=sample_frequency)
+size = len(test_range)
 
-initialization1_end_time = t.time()
-print("Finished predictions Initialization - {}s".format(initialization1_end_time-initialization1_start_time))
-while count < 100:
-    count += 1
-    print("update_count = {}".format(count))
-    current_time = update_time(current_time)
-    lookback_windows = update_lookback_windows(current_time, lookback_windows)
-    models = fit_build_models(lookback_windows, fixed_pdq, seasonal_pdq) #, seasonal_pdq)
-    predictions = make_predictions(models, predictions)
-    mapes, predictions = verify_forecast(lookback_windows, predictions, mapes)
+for x in range(number_of_tests):
+    test_date = test_range[random.randint(1, size+1)]
+    lookback_windows = init_lookback_windows(test_date, num_of_meters=num_of_meters)
+    models, params = fit_build_models(lookback_windows, models, params)
+
+fig, axes = plt.subplots(nrows=1 + fixed_pdq[0] + fixed_pdq[2], ncols=1)
+fig.suptitle('Test', fontsize=20)
+
+for key, value in params.items():
+    param_list = value.index
+
+    loc = 0
+    for param in param_list:
+        value.loc[param].plot(ax=axes[loc]).set_title(param)
+        loc = loc + 1
+    # value['mean'] = value.mean(axis=1)
+    # print(value)
+    # test = value.loc['ma.L1']
+# plt.plot(test)
+plt.show()
 
 program_end_time = t.time()
 print("fin-ARIMAX_forecast; Time: %d" % (program_end_time - program_start_time))
 
-# plt.plot(lookback_windows[1000])
-# plt.plot(predictions[1000].predicted_mean)
-# plt.show()
