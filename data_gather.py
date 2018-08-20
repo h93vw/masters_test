@@ -218,6 +218,36 @@ def gather_cer_data_single(current_time, meter_id):
     access_sql.disconnect_postgresql(conn)
     return record
 
+def gather_cer_data_time_range(meter_id):
+    # print("Begin - Data fetch")
+    program_start_time = t.time()
+
+    conn = access_sql.connect_postgresql()
+
+    #print('gather - Fetching data from meter {}'.format(meter_id))
+    query_list = []
+    query_list.append("SELECT MIN(date) FROM readings WHERE meterid = {}".format(meter_id))
+    query_list.append("SELECT MAX(date) FROM readings WHERE meterid = {}".format(meter_id))
+    results_list = []
+
+    for query in query_list:
+
+        #
+
+            results_list.append(access_sql.access_postgresql_single(conn, query)[0])
+
+
+        # except:
+        #     print("Error: Skipping meter: %d" % meter_id)
+
+    start = results_list[0]
+    end = results_list[-1]
+
+    program_end_time = t.time()
+    # print("fin-Data_fetch; Time: %d " % (program_end_time - program_start_time))
+    access_sql.disconnect_postgresql(conn)
+    return start, end
+
 
 def data_check(data):
     observed_window_check = data[0][6]
