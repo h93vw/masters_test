@@ -10,7 +10,7 @@ import datetime
 
 # csv_ARIMAX_orders = open('..\\masters_test\\data\\orders_ARIMAX.csv', "r")
 
-current_time = datetime.datetime(2016, 12, 12, 0, 0) # (2010, 10, 7, 0, 0) timestamps differ at home
+current_time = datetime.datetime(2010, 10, 7, 0, 0) # (2016, 12, 12, 0, 0) timestamps differ at home
 num_of_meters = 10
 sample_frequency = datetime.timedelta(minutes=30)
 window_size = datetime.timedelta(weeks=12)
@@ -57,7 +57,11 @@ def fit_build_models(lookback_windows, models=None, params=None, pdq=(0, 1, 2), 
                                                 enforce_stationarity=False,
                                                 enforce_invertibility=False)
 
-        fit_model = build_model.fit(disp=0)
+        # test = len(params_list)
+        # if len(params_list) > 1 :
+        #     initial_param = params_list[-1]
+
+        fit_model = build_model.fit(disp=False)
         if params_list is not None:
             params_list = pd.concat([params_list, fit_model.params.rename(value.index[-1])], axis=1)
             params_list.sort_index(axis=1, inplace=True)
@@ -137,11 +141,9 @@ for key, value in params.items():
         value.loc[param].plot(ax=axes[loc]).set_title(param)
         loc = loc + 1
     # value['mean'] = value.mean(axis=1)
-    # print(value)
-    # test = value.loc['ma.L1']
-# plt.plot(test)
-plt.show()
+
 
 program_end_time = t.time()
 print("fin-ARIMAX_forecast; Time: %d" % (program_end_time - program_start_time))
 
+plt.show()
