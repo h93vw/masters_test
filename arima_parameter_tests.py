@@ -47,10 +47,17 @@ def fit_build_models(lookback_windows, models=None, params=None, pdq=(0, 1, 2), 
         if params is None:
             params = {}
             params_list = None
+            initial_params = None
         elif key not in params:
             params_list = None
+            initial_params = None
         else:
             params_list = params[key]
+            # if isinstance(params_list, pd.DataFrame):
+            #     loc = value.index[-2]
+            #     initial_params = params_list[loc]
+            # else:
+            #     initial_params = params_list
         build_model = sm.tsa.statespace.SARIMAX(value,
                                                 order=pdq,
                                                 seasonal_order=seasonal_pdq,
@@ -61,7 +68,7 @@ def fit_build_models(lookback_windows, models=None, params=None, pdq=(0, 1, 2), 
         # if len(params_list) > 1 :
         #     initial_param = params_list[-1]
 
-        fit_model = build_model.fit(disp=False)
+        fit_model = build_model.fit(disp=False)#, start_params=initial_params)
         if params_list is not None:
             params_list = pd.concat([params_list, fit_model.params.rename(value.index[-1])], axis=1)
             params_list.sort_index(axis=1, inplace=True)
@@ -87,7 +94,7 @@ def make_predictions(models, predictions=None, forecast_horizon=datetime.timedel
         return predictions
 
 
-def verify_forecast(lookback_window, predictions, mapes=None):
+def verify_forecast(lookback_windows, predictions, mapes=None):
     if mapes == None:
         mapes = {}
     data_align_check = False
@@ -97,7 +104,7 @@ def verify_forecast(lookback_window, predictions, mapes=None):
         prediction_window_start = current_prediction.index.values[0]
         prediction_window_end = current_prediction.index.values[-1]
 
-        observed_window = lookback_window[key][prediction_window_start:prediction_window_end]
+        observed_window = lookback_windows[key][prediction_window_start:prediction_window_end]
         if observed_window.any():
             if observed_window.index.values[0] == prediction_window_start:
                 if observed_window.index.values[-1] == prediction_window_end:
@@ -126,7 +133,7 @@ test_range = pd.date_range(start + window_size, end, freq=sample_frequency)
 size = len(test_range)
 
 for x in range(number_of_tests):
-    test_date = test_range[random.randint(1, size+1)]
+    test_date = test_range[random.randint(0, size - 1)]
     lookback_windows = init_lookback_windows(test_date, num_of_meters=num_of_meters)
     models, params = fit_build_models(lookback_windows, models, params)
 

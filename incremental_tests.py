@@ -37,21 +37,21 @@ def update_lookback_windows(current_time, lookback_windows, window_size=datetime
     return lookback_windows
 
 
-def fit_build_models(lookback_windows, pdq=(0, 1, 2), seasonal_pdq=(0, 0, 0, 48)):
-    models = {}
-    for key, value in lookback_windows.items():
-        build_model = sm.tsa.statespace.SARIMAX(value,
-                                                order=pdq,
-                                                seasonal_order=seasonal_pdq,
-                                                enforce_stationarity=False,
-                                                enforce_invertibility=False)
+# def fit_build_models(lookback_windows, pdq=(0, 1, 2), seasonal_pdq=(0, 0, 0, 48)):
+#     models = {}
+#     for key, value in lookback_windows.items():
+#         build_model = sm.tsa.statespace.SARIMAX(value,
+#                                                 order=pdq,
+#                                                 seasonal_order=seasonal_pdq,
+#                                                 enforce_stationarity=False,
+#                                                 enforce_invertibility=False)
+#
+#         fit_model = build_model.fit(disp=0)
+#         params = fit_model.params
+#         models[key] = fit_model
+#     return models
 
-        fit_model = build_model.fit(disp=0)
-        params = fit_model.params
-        models[key] = fit_model
-    return models
-
-def fit_build_models_1(lookback_windows, models=None, params=None, pdq=(0, 1, 2), seasonal_pdq=(0, 0, 0, 48)):
+def fit_build_models(lookback_windows, models=None, params=None, pdq=(0, 1, 2), seasonal_pdq=(0, 0, 0, 48)):
     if models is None:
         models = {}
     for key, value in lookback_windows.items():
@@ -139,7 +139,7 @@ print("Begin Initialization")
 program_start_time = t.time()
 
 lookback_windows = init_lookback_windows(current_time, num_of_meters, window_size=window_size)
-models, params = fit_build_models_1(lookback_windows, models=None, params=None, pdq=fixed_pdq, seasonal_pdq=fixed_seasonal_pdq)
+models, params = fit_build_models(lookback_windows, models=None, params=None, pdq=fixed_pdq, seasonal_pdq=fixed_seasonal_pdq)
 predictions = make_predictions(models)
 
 initialization0_end_time = t.time()
@@ -151,7 +151,7 @@ while not mapes:
     print("update_count = {}".format(count))
     current_time = update_time(current_time)
     lookback_windows = update_lookback_windows(current_time, lookback_windows)
-    models, params = fit_build_models_1(lookback_windows, models, params, pdq=fixed_pdq, seasonal_pdq=fixed_seasonal_pdq) #, seasonal_pdq)
+    models, params = fit_build_models(lookback_windows, models, params, pdq=fixed_pdq, seasonal_pdq=fixed_seasonal_pdq) #, seasonal_pdq)
     predictions = make_predictions(models, predictions)
     mapes, predictions = verify_forecast(lookback_windows, predictions, mapes)
 
@@ -162,7 +162,7 @@ while count < 10:
     print("update_count = {}".format(count))
     current_time = update_time(current_time)
     lookback_windows = update_lookback_windows(current_time, lookback_windows)
-    models, params = fit_build_models_1(lookback_windows, models, params, fixed_pdq, fixed_seasonal_pdq) #, seasonal_pdq)
+    models, params = fit_build_models(lookback_windows, models, params, fixed_pdq, fixed_seasonal_pdq) #, seasonal_pdq)
     predictions = make_predictions(models, predictions)
     mapes, predictions = verify_forecast(lookback_windows, predictions, mapes)
 

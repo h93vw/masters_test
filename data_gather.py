@@ -1,5 +1,6 @@
 import access_sql
 import datetime
+import random
 
 import time as t
 import pandas as pd
@@ -248,6 +249,14 @@ def gather_cer_data_time_range(meter_id):
     access_sql.disconnect_postgresql(conn)
     return start, end
 
+def gather_cer_meter_ids(number=None):
+    meter_ids = get_meters()
+    if number is not None:
+        selected = []
+        for i in range(number):
+            selected.append(meter_ids[random.randint(0, len(meter_ids) - 1)])
+        meter_ids = selected
+    return meter_ids
 
 def data_check(data):
     observed_window_check = data[0][6]
