@@ -10,7 +10,7 @@ import datetime
 
 # csv_ARIMAX_orders = open('..\\masters_test\\data\\orders_ARIMAX.csv', "r")
 
-current_time = datetime.datetime(2010, 10, 7, 0, 0) # (2016, 12, 12, 0, 0) timestamps differ at home
+current_time = datetime.datetime(2016, 12, 12, 0, 0) #(2010, 10, 7, 0, 0) timestamps differ at home
 num_of_meters = 30
 sample_frequency = datetime.timedelta(minutes=30)
 window_size = datetime.timedelta(weeks=12)

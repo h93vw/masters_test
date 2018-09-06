@@ -11,9 +11,9 @@ import datetime
 # csv_ARIMAX_orders = open('..\\masters_test\\data\\orders_ARIMAX.csv', "r")
 
 current_time = datetime.datetime(2010, 10, 7, 0, 0) # (2016, 12, 12, 0, 0) timestamps differ at home
-num_of_meters = 30
+num_of_meters = 2857
 sample_frequency = datetime.timedelta(minutes=30)
-window_size = datetime.timedelta(weeks=30)
+window_size = datetime.timedelta(minutes=90)
 fixed_pdq = (0, 1, 2)
 seasonal_pdq = (0, 0, 0, 48) # (0, 1, 1, 48)
 count = 0
@@ -126,7 +126,6 @@ def update_lookback_windows(current_time, lookback_windows, window_size=datetime
 #                     print("Predictions and lookback window not aligned")
 #     return mapes, predictions
 
-
 print("Begin Initialization")
 program_start_time = t.time()
 
@@ -151,7 +150,7 @@ for meter_id in meter_ids:
         # test3 = data_list[i]
         diff = np.dot(w, data_list[i-mk:i].transpose()) - data_list[i]
         w = w - data_list[i-mk:i] * 2 * diff / np.sqrt(i+1-mk)*lrate
-        SE = SE + np.square(diff)
+        SE = 1
         test = test + np.absolute(diff/data_list[i])
         if i % t_tick == 0:
             RMSEs[meter_id].append(np.sqrt(SE/(i+1)))

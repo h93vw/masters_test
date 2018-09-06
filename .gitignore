@@ -97,9 +97,11 @@ ENV/
 
 # mypy
 .mypy_cache/
-data/cer/File6.csv
-data/cer/File5.csv
-data/cer/File4.csv
-data/cer/File3.csv
-data/cer/File2.csv
-data/cer/File1.csv
+.idea/masters_test.iml
+.idea/masters_test.iml
+.idea/misc.xml
+.idea/masters_test.iml
+.idea/workspace.xml
+.idea/misc.xml
+.idea/masters_test.iml
+.idea/workspace.xml
