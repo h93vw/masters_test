@@ -23,9 +23,11 @@ import os
 os.environ["PYSPARK_PYTHON"] = 'C:\\ProgramData\\Anaconda3\\python.exe'
 os.environ["PYSPARK_DRIVER_PYTHON"] = 'C:\\ProgramData\\Anaconda3\\python.exe'
 
-current_time = datetime.datetime(2010, 10, 7, 0, 0)
-num_of_meters = 30
+start_time = datetime.datetime(2010, 10, 7, 0, 0)
 sample_frequency = datetime.timedelta(minutes=30)
+num_tests = 2
+list_times = [start_time + x * sample_frequency for x in range(num_tests)]
+num_of_meters = 30
 window_size = datetime.timedelta(hours=24)
 init_model_params = {}
 meter_ids = get_meters()
@@ -39,52 +41,12 @@ program_start_time = t.time()
 sc = CassandraSparkContext(appName="PySpark Cassandra Test", master="local[*]")
 
 '''DataFrame Tests'''
-# sqlContext = SQLContext(sc)
-# model_parametersDF = sqlContext.read.format("org.apache.spark.sql.cassandra").options(table="models", keyspace="cer").load()
-
-# lagged_readingsDF = sqlContext.read.format("org.apache.spark.sql.cassandra").options(table="readings", keyspace="cer")\
-#     .load().filter("date < '{}' AND date >= '{}'".format(current_time, current_time-mk*sample_frequency)).groupBy("meter_id")\
-#     .agg(F.collect_list("date"), F.collect_list("measurement")).show()
-
-
-# lagged_readingsDF = sqlContext.read.format("org.apache.spark.sql.cassandra").options(table="readings", keyspace="cer")\
-#     .load()
-#     # .filter("date < '{}' AND date >= '{}'".format(current_time, current_time-mk*sample_frequency)).groupBy("meter_id")\
-#     # .agg(F.collect_list("date"), F.collect_list("measurement"))
-# test = lagged_readingsDF.select('meter_id','date','measurement').rdd.map(lambda x: (x["meter_id"], (x["date"], x["measurement"]))).groupByKey().mapValues(list).collect()
-
-# lagged_readingsDF1 = sqlContext.read.format("org.apache.spark.sql.cassandra").options(table="readings", keyspace="cer") \
-#     .load()
-# lagged_readingsDF1.
-
-# model_parametersDF.registerTempTable("models")
-# lagged_readingsDF.registerTempTable("readings")
-#
-# sqlContext.sql("SELECT meter_id, ")
-
-
-'''Init model parameters'''
-# for meter_id in meter_ids:
-#     init_model_params[meter_id] = [random.random() for x in range(mk)]
-#
-# model_parameters1 = sc.parallelize([{
-#     "meter_id": k,
-#     "w": v
-# } for k, v in init_model_params.items()])
-# model_parameters1.saveToCassandra("cer", "models")
-
-current_readings = sc \
+#for current_time in list_times:
+current_time = list_times[0]
+readings = sc \
     .cassandraTable("cer", "readings") \
     .select("meter_id", "date", "measurement") \
-    .where("date = '{}'".format(current_time))\
-    .map(lambda x: (x["meter_id"], (x["date"], x["measurement"]))) \
-    .groupByKey() \
-    .mapValues(lambda x: pd.Series(list(i[1] for i in x), index=list(i[0] for i in x)))
-
-lagged_readings = sc \
-    .cassandraTable("cer", "readings") \
-    .select("meter_id", "date", "measurement") \
-    .where("date < '{}' AND date >= '{}'".format(current_time, current_time-mk*sample_frequency))\
+    .where("date <= '{}' AND date >= '{}'".format(current_time, current_time-mk*sample_frequency))\
     .map(lambda x: (x["meter_id"], (x["date"], x["measurement"])))\
     .groupByKey()\
     .mapValues(lambda x: pd.Series(list(i[1] for i in x), index=list(i[0] for i in x)))
@@ -93,12 +55,14 @@ model_parameters = sc \
     .cassandraTable("cer", "models") \
     .map(lambda x: (x["meter_id"], np.asanyarray(x["w"])))
 
-data = lagged_readings.join(model_parameters).join(current_readings)\
-    .map(lambda x: (x[0], np.asanyarray(x[1][0][0].tolist()), x[1][0][1], x[1][1].tolist())).persist()
-
-diff = data.map(lambda x: (x[0], x[1], x[2], x[3], np.dot(x[2], x[1].transpose())-x[3]))
-
-w = diff.map(lambda x: (x[0], x[1], x[2], x[3], (x[2]-x[1] * 2 * x[3] / np.sqrt(i)*lrate), SE + np.square(x[3]))).collect()
-
+data = readings.join(model_parameters)\
+    .collect()
+#     .map(lambda x: (x[0], np.asanyarray(x[1][0][0].tolist()), x[1][0][1], x[1][1].tolist())).persist()
+#
+# diff = data.map(lambda x: (x[0], x[1], x[2], x[3], np.dot(x[2], x[1].transpose())-x[3]))
+#
+# w = diff.map(lambda x: (x[0], x[1], x[2], x[3], (x[2]-x[1] * 2 * x[3] / np.sqrt(i)*lrate), SE + np.square(x[3]))).collect()
+# print(i)
+# i=i+1
 program_end_time = t.time()
 print("fin-spark cassandra tests; Time: %d" % (program_end_time - program_start_time))
